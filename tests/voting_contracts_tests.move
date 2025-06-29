@@ -76,6 +76,9 @@ fun create_proposal(admin_cap: &AdminCapability, ctx: &mut TxContext) {
     let desc = b"Description 1".to_string();
     let expires_at = current_timestamp_ms + seven_days_ms;
 
+    debug::print(&b"----- Current Epoch Timestamp -----".to_string());
+    debug::print(&current_timestamp_ms);
+    debug::print(&b"----- Expires at -----".to_string());
     debug::print(&expires_at);
     proposal::create(
         admin_cap,

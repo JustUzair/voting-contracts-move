@@ -2,7 +2,10 @@ module voting_contracts::dashboard;
 
 use voting_contracts::proposal::Proposal;
 
+// ########## Constants ##########
 const E_NOT_ADMIN: u64 = 1;
+
+// ########## Structs ##########
 
 public struct AdminCapability has key {
     id: UID,
@@ -12,7 +15,6 @@ public struct Dashboard has key {
     id: UID,
     proposal_ids: vector<ID>,
 }
-
 /*
  * @dev Hot Potato
  * @dev A struct with no abilities (copy, drop, etc)
@@ -31,6 +33,7 @@ public struct DashboardConfig {
 */
 public struct DASHBOARD has drop {}
 
+// ########## Constructor ##########
 /*
  * @param ctx - TxContext
  * @dev Init function that transfers admin capability to the sender
@@ -43,6 +46,7 @@ fun init(one_time_witness: DASHBOARD, ctx: &mut TxContext) {
     transfer::transfer(admin_cap, ctx.sender());
 }
 
+// ########## Functions ##########
 /*
  * @param _admin_cap - Admin Capability to allow only sender with Admin access to  create a dashboard
  * @param ctx - TxContext 
@@ -73,6 +77,7 @@ public fun register_proposal(self: &mut Dashboard, proposal_id: ID) {
     self.proposal_ids.push_back(proposal_id);
 }
 
+// ########## Test-Only Function ##########
 /*
  * @dev Test only function to simulate scenarios for test cases
 */
@@ -87,6 +92,8 @@ public fun issue_admin_cap(ctx: &mut TxContext) {
         ctx.sender(),
     );
 }
+
+// ########## Tests ##########
 
 #[test]
 fun test_module_init() {
