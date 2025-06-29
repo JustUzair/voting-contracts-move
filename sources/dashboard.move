@@ -13,6 +13,12 @@ public struct Dashboard has key {
     proposal_ids: vector<ID>,
 }
 
+/*
+ * @dev Hot Potato
+ * @dev A struct with no abilities (copy, drop, etc)
+ * @dev hot potato is used to ensure that the borrowed value, when taken from the container, is returned back to it
+ * @docs refer to https://move-book.com/programmability/hot-potato-pattern
+*/
 public struct DashboardConfig {
     dashboard_owner: address,
 }
