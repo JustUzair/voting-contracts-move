@@ -1,7 +1,5 @@
 module voting_contracts::dashboard;
 
-use voting_contracts::proposal::Proposal;
-
 public struct AdminCapability has key {
     id: UID,
 }
@@ -10,15 +8,16 @@ public struct Dashboard has key {
     id: UID,
     proposal_ids: vector<ID>,
 }
+public struct DASHBOARD has drop {}
 
 /*
  * @param ctx - TxContext
  * @dev Init function that transfers admin capability to the sender
 */
-fun init(ctx: &mut TxContext) {
+fun init(one_time_witness: DASHBOARD, ctx: &mut TxContext) {
     let admin_cap = AdminCapability { id: object::new(ctx) };
     // Restricted Access to admin only
-    new(&admin_cap, ctx);
+    new(one_time_witness, &admin_cap, ctx);
     transfer::transfer(admin_cap, ctx.sender());
 }
 
@@ -28,7 +27,7 @@ fun init(ctx: &mut TxContext) {
  * @dev Only callable from init function
  * @dev Only able to create a dashboard upon initialization of contracts
 */
-public fun new(_admin_cap: &AdminCapability, ctx: &mut TxContext) {
+public fun new(_one_time_witness: DASHBOARD, _admin_cap: &AdminCapability, ctx: &mut TxContext) {
     let dashboard: Dashboard = Dashboard {
         id: object::new(ctx),
         proposal_ids: vector[],
@@ -69,7 +68,8 @@ fun test_module_init() {
     let mut scenario = test_scenario::begin(creator);
 
     {
-        init(scenario.ctx());
+        let one_time_witness = DASHBOARD {};
+        init(one_time_witness, scenario.ctx());
     };
     scenario.next_tx(creator);
     {
