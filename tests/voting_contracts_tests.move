@@ -9,33 +9,21 @@ use voting_contracts::proposal::{Self, Proposal};
 
 #[test]
 fun test_create_proposal_with_admin_cap() {
-    let one_day_ms: u64 = 86400 * 1000; // 24 hours in milliseconds
-    let seven_days_ms: u64 = 7 * one_day_ms;
-
     let admin = @0xAd319;
 
     let mut scenario = test_scenario::begin(admin);
+    let current_timestamp_ms = scenario.ctx().epoch_timestamp_ms();
 
+    let one_day_ms: u64 = 86400 * 1000; // 24 hours in milliseconds
+    let seven_days_ms: u64 = 7 * one_day_ms;
     {
         dashboard::issue_admin_cap(scenario.ctx());
     };
 
-    let current_timestamp_ms = scenario.ctx().epoch_timestamp_ms();
     scenario.next_tx(admin);
     {
         let admin_cap = scenario.take_from_sender<AdminCapability>();
-        let title = b"Title 1".to_string();
-        let desc = b"Description 1".to_string();
-
-        let expires_at = current_timestamp_ms + seven_days_ms;
-        debug::print(&expires_at);
-        proposal::create(
-            &admin_cap,
-            title,
-            desc,
-            expires_at,
-            scenario.ctx(),
-        );
+        create_proposal(&admin_cap, scenario.ctx());
         test_scenario::return_to_sender(&scenario, admin_cap);
     };
 
@@ -59,35 +47,41 @@ fun test_create_proposal_with_admin_cap() {
 #[test]
 #[expected_failure(abort_code = test_scenario::EEmptyInventory)]
 fun test_create_proposal_with_no_admin_cap_failure() {
-    let one_day_ms: u64 = 86400 * 1000; // 24 hours in milliseconds
-    let seven_days_ms: u64 = 7 * one_day_ms;
-
     let admin = @0xAd319;
     let not_admin = @0x907Ad319;
     let mut scenario = test_scenario::begin(admin);
-
     {
         dashboard::issue_admin_cap(scenario.ctx());
     };
 
-    let current_timestamp_ms = scenario.ctx().epoch_timestamp_ms();
     scenario.next_tx(not_admin);
     {
         let admin_cap = scenario.take_from_sender<AdminCapability>();
-        let title = b"Title 1".to_string();
-        let desc = b"Description 1".to_string();
-
-        let expires_at = current_timestamp_ms + seven_days_ms;
-        debug::print(&expires_at);
-        proposal::create(
-            &admin_cap,
-            title,
-            desc,
-            expires_at,
-            scenario.ctx(),
-        );
+        create_proposal(&admin_cap, scenario.ctx());
         test_scenario::return_to_sender(&scenario, admin_cap);
     };
 
     scenario.end();
+}
+
+// Helper Functions
+
+fun create_proposal(admin_cap: &AdminCapability, ctx: &mut TxContext) {
+    let current_timestamp_ms = ctx.epoch_timestamp_ms();
+
+    let one_day_ms: u64 = 86400 * 1000; // 24 hours in milliseconds
+    let seven_days_ms: u64 = 7 * one_day_ms;
+
+    let title = b"Title 1".to_string();
+    let desc = b"Description 1".to_string();
+    let expires_at = current_timestamp_ms + seven_days_ms;
+
+    debug::print(&expires_at);
+    proposal::create(
+        admin_cap,
+        title,
+        desc,
+        expires_at,
+        ctx,
+    );
 }
