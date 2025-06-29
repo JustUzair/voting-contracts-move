@@ -1,9 +1,12 @@
 module voting_contracts::dashboard;
 
+use sui::types;
 use voting_contracts::proposal::Proposal;
 
 // ########## Constants ##########
+const E_DUPLICATE_PROPOSAL: u64 = 0;
 const E_NOT_ADMIN: u64 = 1;
+const E_NOT_ONE_TIME_WITNESS: u64 = 2;
 
 // ########## Structs ##########
 
@@ -59,6 +62,7 @@ public fun new(
     ctx: &mut TxContext,
     config: DashboardConfig,
 ) {
+    assert!(types::is_one_time_witness(&_one_time_witness), E_NOT_ONE_TIME_WITNESS);
     let DashboardConfig { dashboard_owner } = config;
     assert!(ctx.sender() == dashboard_owner, E_NOT_ADMIN);
     let dashboard: Dashboard = Dashboard {
@@ -74,6 +78,7 @@ public fun new(
 
 */
 public fun register_proposal(self: &mut Dashboard, proposal_id: ID) {
+    assert!(!self.proposal_ids.contains(&proposal_id), E_DUPLICATE_PROPOSAL);
     self.proposal_ids.push_back(proposal_id);
 }
 
