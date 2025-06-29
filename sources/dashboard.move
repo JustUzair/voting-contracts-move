@@ -8,6 +8,12 @@ public struct Dashboard has key {
     id: UID,
     proposal_ids: vector<ID>,
 }
+
+/*
+ * @dev OTW - One Time Witness, all caps naming same as module
+ * @dev ensures that a function with otw capability can only be init once
+ * @docs refer to https://move-book.com/programmability/one-time-witness/
+*/
 public struct DASHBOARD has drop {}
 
 /*
