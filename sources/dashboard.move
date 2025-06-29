@@ -1,5 +1,7 @@
 module voting_contracts::dashboard;
 
+use voting_contracts::proposal::Proposal;
+
 public struct AdminCapability has key {
     id: UID,
 }
@@ -12,6 +14,7 @@ public struct Dashboard has key {
 /*
  * @dev OTW - One Time Witness, all caps naming same as module
  * @dev ensures that a function with otw capability can only be init once
+ * @dev otw cannot be initialized manually
  * @docs refer to https://move-book.com/programmability/one-time-witness/
 */
 public struct DASHBOARD has drop {}
