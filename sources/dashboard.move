@@ -1,5 +1,7 @@
 module voting_contracts::dashboard;
 
+use std::string::String;
+use sui::event;
 use sui::types;
 use voting_contracts::proposal::Proposal;
 
@@ -7,6 +9,12 @@ use voting_contracts::proposal::Proposal;
 const E_DUPLICATE_PROPOSAL: u64 = 0;
 const E_NOT_ADMIN: u64 = 1;
 const E_NOT_ONE_TIME_WITNESS: u64 = 2;
+
+// ########## Events ##########
+public struct DashboardCreated has copy, drop {
+    id: ID,
+    message: String,
+}
 
 // ########## Structs ##########
 
@@ -69,6 +77,10 @@ public fun new(
         id: object::new(ctx),
         proposal_ids: vector[],
     };
+    event::emit(DashboardCreated {
+        id: object::id(&dashboard),
+        message: b"Dashboard Created".to_string(),
+    });
     transfer::share_object(dashboard);
 }
 
@@ -82,6 +94,10 @@ public fun register_proposal(self: &mut Dashboard, proposal_id: ID) {
     self.proposal_ids.push_back(proposal_id);
 }
 
+// ########## Public Function ##########
+public fun get_proposal_ids(self: &mut Dashboard): vector<ID> {
+    return self.proposal_ids
+}
 // ########## Test-Only Function ##########
 /*
  * @dev Test only function to simulate scenarios for test cases
@@ -96,6 +112,24 @@ public fun issue_admin_cap(ctx: &mut TxContext) {
         AdminCapability { id: object::new(ctx) },
         ctx.sender(),
     );
+}
+
+#[test_only]
+/*
+ * @dev Creates a one time witness for testing
+*/
+public fun issue_one_time_witness(): DASHBOARD {
+    DASHBOARD {}
+}
+
+#[test_only]
+/*
+ * @dev Creates a one time witness for testing
+*/
+public fun issue_admin_config(ctx: &TxContext): DashboardConfig {
+    DashboardConfig {
+        dashboard_owner: ctx.sender(),
+    }
 }
 
 // ########## Tests ##########
