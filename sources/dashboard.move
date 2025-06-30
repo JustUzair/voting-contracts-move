@@ -98,9 +98,9 @@ public fun new(
 /*
  * @param self - Dashboard object to mutate self properties and structs
  * @param proposal_id - Proposal ID to push into the proposal id array
-
+ * @dev only admin can register proposals
 */
-public fun register_proposal(self: &mut Dashboard, proposal_id: ID) {
+public fun register_proposal(self: &mut Dashboard, _admin_cap: &AdminCapability, proposal_id: ID) {
     assert!(!self.proposal_ids.contains(&proposal_id), E_DUPLICATE_PROPOSAL);
     event::emit(ProposalRegistered {
         proposal_id,
