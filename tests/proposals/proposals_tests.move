@@ -16,13 +16,15 @@ public fun test_register_proposal_as_admin() {
     {
         dashboard::issue_admin_cap(scenario.ctx());
     };
-    scenario.next_tx(admin);
 
+    scenario.next_tx(admin);
     {
         let admin_cap = scenario.take_from_sender<AdminCapability>();
+
         let one_time_witness = dashboard::issue_one_time_witness();
         let dashboard_config = dashboard::issue_admin_config(scenario.ctx());
         dashboard::new(one_time_witness, &admin_cap, scenario.ctx(), dashboard_config);
+
         test_scenario::return_to_sender(&scenario, admin_cap);
     };
 
@@ -32,7 +34,6 @@ public fun test_register_proposal_as_admin() {
         let proposal_id = create_proposal(&admin_cap, scenario.ctx());
         debug::print(&b"----- Proposal ID -----".to_string());
         debug::print(&proposal_id);
-
         let mut dashboard = test_scenario::take_shared<Dashboard>(&scenario);
         dashboard.register_proposal(proposal_id);
         let proposals = dashboard.get_proposal_ids();
