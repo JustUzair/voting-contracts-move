@@ -260,6 +260,8 @@ sui client ptb \
 
 ### Proposal(V2) Creation & Registration Results
 
+https://suiscan.xyz/testnet/tx/ctCu6z8YXetd4KUYGfM56GeXTHPsXxH6WuAsrp4GdMj
+
 ```shell
 uzair@Mac voting_contracts % sui client ptb \
 --move-call 0xeb771f096d5c26fc23166c7a224b72c58bc7f38b6924a750cfd43e31faf1094f::proposal::create \
