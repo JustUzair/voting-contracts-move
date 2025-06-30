@@ -1,10 +1,19 @@
 module voting_contracts::proposal;
 
 use std::string::String;
+use sui::event;
 use voting_contracts::dashboard::AdminCapability;
 
 // ########## Constants ##########
 
+// ########## Events ##########
+
+public struct ProposalCreated has copy, drop {
+    id: ID,
+    title: String,
+    creator: address,
+    message: String,
+}
 // ########## Structs ##########
 
 public struct Proposal has key {
@@ -36,7 +45,7 @@ public fun create(
     description: String,
     expires_at: u64,
     ctx: &mut TxContext,
-) {
+): ID {
     let proposal: Proposal = Proposal {
         id: object::new(ctx),
         title,
@@ -47,8 +56,15 @@ public fun create(
         creator: ctx.sender(),
         voters_registry: vector[],
     };
-
+    event::emit(ProposalCreated {
+        id: object::id(&proposal),
+        title: title(&proposal),
+        creator: creator(&proposal),
+        message: b"Proposal Created".to_string(),
+    });
+    let proposal_id = proposal.id.to_inner();
     transfer::share_object(proposal);
+    return proposal_id
 }
 
 // ########## View-only Functions ##########
