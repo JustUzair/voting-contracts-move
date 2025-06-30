@@ -3,6 +3,10 @@ module voting_contracts::proposal;
 use std::string::String;
 use voting_contracts::dashboard::AdminCapability;
 
+// ########## Constants ##########
+
+// ########## Structs ##########
+
 public struct Proposal has key {
     id: UID,
     title: String,
@@ -14,6 +18,18 @@ public struct Proposal has key {
     voters_registry: vector<address>,
 }
 
+// ########## Constructor ##########
+
+// ########## Functions ##########
+
+/*
+ * @param _admin_cap - capability struct access to the admin account
+ * @param title - Title of the proposal
+ * @param description - Description of the proposal
+ * @param expires_at - Expires at timestamp for the proposal
+ * @param ctx - TxContext
+ * @dev Admin only function to create a proposal
+*/
 public fun create(
     _admin_cap: &AdminCapability, // only sender with admin capability can call
     title: String,
@@ -34,6 +50,8 @@ public fun create(
 
     transfer::share_object(proposal);
 }
+
+// ########## View-only Functions ##########
 
 public fun title(self: &Proposal): String {
     return self.title
