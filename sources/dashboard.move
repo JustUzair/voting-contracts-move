@@ -11,10 +11,13 @@ const E_NOT_ADMIN: u64 = 1;
 const E_NOT_ONE_TIME_WITNESS: u64 = 2;
 
 // ########## Events ##########
-public struct DashboardCreated has copy, drop {
+public struct DashboardCreation has copy, drop {
     id: ID,
+    owner: address,
     message: String,
 }
+
+public struct DashboardModuleInit has copy, drop { message: String }
 
 // ########## Structs ##########
 
@@ -52,6 +55,9 @@ public struct DASHBOARD has drop {}
 fun init(one_time_witness: DASHBOARD, ctx: &mut TxContext) {
     let admin_cap = AdminCapability { id: object::new(ctx) };
     let config = DashboardConfig { dashboard_owner: ctx.sender() };
+    event::emit(DashboardModuleInit {
+        message: b"Dashboard Init Successful".to_string(),
+    });
     // Restricted Access to admin only
     new(one_time_witness, &admin_cap, ctx, config);
     transfer::transfer(admin_cap, ctx.sender());
@@ -77,8 +83,9 @@ public fun new(
         id: object::new(ctx),
         proposal_ids: vector[],
     };
-    event::emit(DashboardCreated {
+    event::emit(DashboardCreation {
         id: object::id(&dashboard),
+        owner: ctx.sender(),
         message: b"Dashboard Created".to_string(),
     });
     transfer::share_object(dashboard);
