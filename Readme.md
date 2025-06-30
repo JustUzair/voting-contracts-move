@@ -14,6 +14,8 @@ sui move test
 
 - `gas-budget` is optional
 
+- e.g: https://suiscan.xyz/testnet/tx/DTP2T8PZLMUMRKJzcnDo5XeyW1cJaP1s2Pj2ExBuVW4a
+
 ```bash
 sui client publish --gas-budget 1000000
 ```
