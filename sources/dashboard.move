@@ -19,6 +19,10 @@ public struct DashboardCreation has copy, drop {
 
 public struct DashboardModuleInit has copy, drop { message: String }
 
+public struct ProposalRegistered has copy, drop {
+    proposal_id: ID,
+}
+
 // ########## Structs ##########
 
 public struct AdminCapability has key {
@@ -98,6 +102,9 @@ public fun new(
 */
 public fun register_proposal(self: &mut Dashboard, proposal_id: ID) {
     assert!(!self.proposal_ids.contains(&proposal_id), E_DUPLICATE_PROPOSAL);
+    event::emit(ProposalRegistered {
+        proposal_id,
+    });
     self.proposal_ids.push_back(proposal_id);
 }
 
