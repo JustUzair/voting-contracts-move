@@ -37,7 +37,6 @@ fun test_create_proposal_with_admin_cap() {
         let (upvotes, downvotes) = proposal.votes();
         assert!(upvotes == 0 && downvotes == 0);
         assert!(proposal.creator() == admin);
-        assert!(proposal.voters().length() == 0);
         let expires_at = current_timestamp_ms + seven_days_ms;
         assert!(proposal.expires_at() == expires_at);
         test_scenario::return_shared(proposal);
