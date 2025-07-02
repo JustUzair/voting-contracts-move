@@ -8,11 +8,12 @@ use voting_contracts::dashboard::{Self, Dashboard, AdminCapability};
 use voting_contracts::proposal::{Self, Proposal};
 use voting_contracts::utils::create_proposal;
 
+// Constants for test files
+const ADMIN: address = @0xAd319;
+
 #[test]
 fun test_create_proposal_with_admin_cap() {
-    let admin = @0xAd319;
-
-    let mut scenario = test_scenario::begin(admin);
+    let mut scenario = test_scenario::begin(ADMIN);
     let current_timestamp_ms = scenario.ctx().epoch_timestamp_ms();
 
     let one_day_ms: u64 = 86400 * 1000; // 24 hours in milliseconds
@@ -21,7 +22,7 @@ fun test_create_proposal_with_admin_cap() {
         dashboard::issue_admin_cap(scenario.ctx());
     };
 
-    scenario.next_tx(admin);
+    scenario.next_tx(ADMIN);
     {
         let admin_cap = scenario.take_from_sender<AdminCapability>();
         create_proposal(&admin_cap, scenario.ctx());
@@ -29,14 +30,14 @@ fun test_create_proposal_with_admin_cap() {
     };
 
     // Initial Proposal test
-    scenario.next_tx(admin);
+    scenario.next_tx(ADMIN);
     {
         let proposal: Proposal = scenario.take_shared<Proposal>();
         assert!(proposal.title() == b"Title 1".to_string());
         assert!(proposal.description() == b"Description 1".to_string());
         let (upvotes, downvotes) = proposal.votes();
         assert!(upvotes == 0 && downvotes == 0);
-        assert!(proposal.creator() == admin);
+        assert!(proposal.creator() == ADMIN);
         let expires_at = current_timestamp_ms + seven_days_ms;
         assert!(proposal.expires_at() == expires_at);
         test_scenario::return_shared(proposal);
@@ -47,9 +48,8 @@ fun test_create_proposal_with_admin_cap() {
 #[test]
 #[expected_failure(abort_code = test_scenario::EEmptyInventory)]
 fun test_create_proposal_with_no_admin_cap_failure() {
-    let admin = @0xAd319;
     let not_admin = @0x907Ad319;
-    let mut scenario = test_scenario::begin(admin);
+    let mut scenario = test_scenario::begin(ADMIN);
     {
         dashboard::issue_admin_cap(scenario.ctx());
     };

@@ -4,21 +4,35 @@ module voting_contracts::proposals_tests;
 
 use std::debug;
 use sui::test_scenario::{Self, take_shared, return_shared};
-use voting_contracts::dashboard::{Self, AdminCapability, DashboardConfig, Dashboard};
-use voting_contracts::proposal::{Self, Proposal, E_ADMIN_VOTE, E_DUPLICATE_VOTE, ProofOfVoteNFT};
+use voting_contracts::dashboard::{
+    Self,
+    AdminCapability,
+    DashboardConfig,
+    Dashboard,
+    issue_admin_cap
+};
+use voting_contracts::proposal::{
+    Self,
+    Proposal,
+    E_ADMIN_VOTE,
+    E_DUPLICATE_VOTE,
+    ProofOfVoteNFT,
+    E_PROPOSAL_STATUS_NOT_CHANGED,
+    E_VOTING_ENDED,
+    ProposalStatus,
+    enum_active,
+    enum_ended
+};
 use voting_contracts::utils::{create_proposal, create_and_register_proposal};
 
+// Constants for test files
+const ADMIN: address = @0xAd319;
+const VOTER: address = @0xA01e9;
+
 #[test]
-public fun test_register_proposal_as_admin() {
-    let admin = @0xAd319;
-
-    let mut scenario = test_scenario::begin(admin);
-    {
+public fun test_register_proposal_as_admin() { let mut scenario = test_scenario::begin(ADMIN); {
         dashboard::issue_admin_cap(scenario.ctx());
-    };
-
-    scenario.next_tx(admin);
-    {
+    }; scenario.next_tx(ADMIN); {
         let admin_cap = scenario.take_from_sender<AdminCapability>();
 
         let one_time_witness = dashboard::issue_one_time_witness();
@@ -26,10 +40,7 @@ public fun test_register_proposal_as_admin() {
         dashboard::new(one_time_witness, &admin_cap, scenario.ctx(), dashboard_config);
 
         test_scenario::return_to_sender(&scenario, admin_cap);
-    };
-
-    scenario.next_tx(admin);
-    {
+    }; scenario.next_tx(ADMIN); {
         let admin_cap = scenario.take_from_sender<AdminCapability>();
         let proposal_id = create_proposal(&admin_cap, scenario.ctx());
         debug::print(&b"----- Proposal ID -----".to_string());
@@ -43,22 +54,18 @@ public fun test_register_proposal_as_admin() {
 
         test_scenario::return_shared(dashboard);
         test_scenario::return_to_sender(&scenario, admin_cap);
-    };
-
-    scenario.end();
-}
+    }; scenario.end(); }
 
 #[test]
 #[expected_failure(abort_code = test_scenario::EEmptyInventory)] // Admin Cap Failure
 public fun test_register_proposal_as_non_admin() {
-    let admin = @0xAd319;
     let user = @0x123;
-    let mut scenario = test_scenario::begin(admin);
+    let mut scenario = test_scenario::begin(ADMIN);
     {
         dashboard::issue_admin_cap(scenario.ctx());
     };
 
-    scenario.next_tx(admin);
+    scenario.next_tx(ADMIN);
     {
         let admin_cap = scenario.take_from_sender<AdminCapability>();
 
@@ -91,18 +98,17 @@ public fun test_register_proposal_as_non_admin() {
 
 #[test]
 public fun test_proposal_upvote() {
-    let voter = @0xA01e9;
     create_and_register_proposal();
 
     // Get proposal id after proposal creation and registration
-    let mut scenario = test_scenario::begin(voter);
+    let mut scenario = test_scenario::begin(VOTER);
     {
         let mut proposal = test_scenario::take_shared<Proposal>(&scenario);
-        assert!(!proposal.has_voted(voter));
+        assert!(!proposal.has_voted(VOTER));
         proposal.vote(scenario.ctx(), true);
-        assert!(proposal.has_voted(voter));
+        assert!(proposal.has_voted(VOTER));
         debug::print(&b"----- Voter has voted? -----".to_string());
-        debug::print(&proposal.has_voted(voter));
+        debug::print(&proposal.has_voted(VOTER));
         let (upvotes_count, downvotes_count) = proposal.votes();
         assert!(upvotes_count == 1 && downvotes_count == 0);
         debug::print(&b"----- Up-Votes -----".to_string());
@@ -117,18 +123,17 @@ public fun test_proposal_upvote() {
 
 #[test]
 public fun test_proposal_downvote() {
-    let voter = @0xA01e9;
     create_and_register_proposal();
 
     // Get proposal id after proposal creation and registration
-    let mut scenario = test_scenario::begin(voter);
+    let mut scenario = test_scenario::begin(VOTER);
     {
         let mut proposal = test_scenario::take_shared<Proposal>(&scenario);
-        assert!(!proposal.has_voted(voter));
+        assert!(!proposal.has_voted(VOTER));
         proposal.vote(scenario.ctx(), false);
-        assert!(proposal.has_voted(voter));
+        assert!(proposal.has_voted(VOTER));
         debug::print(&b"----- Voter has voted? -----".to_string());
-        debug::print(&proposal.has_voted(voter));
+        debug::print(&proposal.has_voted(VOTER));
         let (upvotes_count, downvotes_count) = proposal.votes();
         assert!(upvotes_count == 0 && downvotes_count == 1);
         debug::print(&b"----- Up-Votes -----".to_string());
@@ -145,19 +150,17 @@ public fun test_proposal_downvote() {
 #[expected_failure(abort_code = proposal::E_ADMIN_VOTE)]
 
 public fun test_proposal_admin_cannot_vote() {
-    let admin = @0xAd319;
-    let voter = admin;
     create_and_register_proposal();
 
     // Get proposal id after proposal creation and registration
-    let mut scenario = test_scenario::begin(voter);
+    let mut scenario = test_scenario::begin(ADMIN);
     {
         let mut proposal = test_scenario::take_shared<Proposal>(&scenario);
-        assert!(!proposal.has_voted(voter));
+        assert!(!proposal.has_voted(ADMIN));
         proposal.vote(scenario.ctx(), false);
-        assert!(proposal.has_voted(voter));
+        assert!(proposal.has_voted(ADMIN));
         debug::print(&b"----- Voter has voted? -----".to_string());
-        debug::print(&proposal.has_voted(voter));
+        debug::print(&proposal.has_voted(ADMIN));
         let (upvotes_count, downvotes_count) = proposal.votes();
         assert!(upvotes_count == 0 && downvotes_count == 1);
         debug::print(&b"----- Up-Votes -----".to_string());
@@ -173,11 +176,10 @@ public fun test_proposal_admin_cannot_vote() {
 #[test]
 #[expected_failure(abort_code = proposal::E_DUPLICATE_VOTE)]
 public fun test_duplicate_votes_failure() {
-    let voter = @0xA01e9;
     create_and_register_proposal();
 
     // Get proposal id after proposal creation and registration
-    let mut scenario = test_scenario::begin(voter);
+    let mut scenario = test_scenario::begin(VOTER);
     {
         let mut proposal = test_scenario::take_shared<Proposal>(&scenario);
         proposal.vote(scenario.ctx(), true);
@@ -190,18 +192,17 @@ public fun test_duplicate_votes_failure() {
 
 #[test]
 public fun test_mint_nft_for_valid_votes() {
-    let voter = @0xA01e9;
     create_and_register_proposal();
 
     // Get proposal id after proposal creation and registration
-    let mut scenario = test_scenario::begin(voter);
+    let mut scenario = test_scenario::begin(VOTER);
     {
         let mut proposal = test_scenario::take_shared<Proposal>(&scenario);
         proposal.vote(scenario.ctx(), true);
 
         test_scenario::return_shared(proposal);
     };
-    scenario.next_tx(voter);
+    scenario.next_tx(VOTER);
     {
         let povNft = test_scenario::take_from_sender<ProofOfVoteNFT>(&scenario);
         debug::print(&povNft);
@@ -209,5 +210,57 @@ public fun test_mint_nft_for_valid_votes() {
         test_scenario::return_to_sender(&scenario, povNft);
     };
 
+    scenario.end();
+}
+
+#[test]
+public fun test_proposal_status_change() {
+    create_and_register_proposal();
+    let mut scenario = test_scenario::begin(ADMIN);
+    {
+        dashboard::issue_admin_cap(scenario.ctx());
+    };
+    scenario.next_tx(ADMIN);
+    {
+        let admin_cap = scenario.take_from_sender<AdminCapability>();
+
+        let mut proposal = test_scenario::take_shared<Proposal>(&scenario);
+        debug::print(&b"Proposal Status before toggle".to_string());
+        debug::print(proposal.status());
+        assert!(proposal.status() == enum_active());
+        proposal.change_proposal_status(&admin_cap, enum_ended());
+        assert!(proposal.status() == enum_ended());
+        debug::print(&b"Proposal Status after toggle".to_string());
+        debug::print(proposal.status());
+        test_scenario::return_shared(proposal);
+        test_scenario::return_to_sender(&scenario, admin_cap);
+    };
+    scenario.end();
+}
+
+#[test]
+#[expected_failure(abort_code = E_VOTING_ENDED)]
+public fun test_proposal_vote_not_allowed_after_proposal_end() {
+    create_and_register_proposal();
+    let mut scenario = test_scenario::begin(ADMIN);
+    {
+        dashboard::issue_admin_cap(scenario.ctx());
+    };
+    scenario.next_tx(ADMIN);
+    {
+        let admin_cap = scenario.take_from_sender<AdminCapability>();
+        let mut proposal = test_scenario::take_shared<Proposal>(&scenario);
+        proposal.change_proposal_status(&admin_cap, enum_ended());
+        test_scenario::return_shared(proposal);
+        test_scenario::return_to_sender(&scenario, admin_cap);
+    };
+    scenario.next_tx(VOTER);
+    {
+        let mut proposal = test_scenario::take_shared<Proposal>(&scenario);
+        proposal.vote(scenario.ctx(), true);
+        let (upvotes_count, downvotes_count) = proposal.votes();
+        assert!(upvotes_count == 1 && downvotes_count == 0);
+        test_scenario::return_shared(proposal);
+    };
     scenario.end();
 }

@@ -9,6 +9,8 @@ use voting_contracts::dashboard::AdminCapability;
 // ########## Constants ##########
 const E_DUPLICATE_VOTE: u64 = 3;
 const E_ADMIN_VOTE: u64 = 4;
+const E_PROPOSAL_STATUS_NOT_CHANGED: u64 = 5;
+const E_VOTING_ENDED: u64 = 6;
 
 // ########## Events ##########
 
@@ -31,6 +33,12 @@ public struct ProofOfVoteNFTMinted has copy, drop {
     minted_to: address,
 }
 
+// ########## Enum ##########
+public enum ProposalStatus has copy, drop, store {
+    ACTIVE,
+    ENDED,
+}
+
 // ########## Storage Structs ##########
 
 public struct Proposal has key {
@@ -41,6 +49,7 @@ public struct Proposal has key {
     downvotes_count: u64,
     expires_at: u64,
     creator: address,
+    status: ProposalStatus,
     voters_registry: Table<address, bool>,
 }
 
@@ -54,9 +63,8 @@ public struct ProofOfVoteNFT has key, store {
     url: Url,
 }
 
-// ########## Constructor ##########
-
 // ########## Functions ##########
+// ########## Public Functions ##########
 
 /*
  * @param _admin_cap - capability struct access to the admin account
@@ -81,6 +89,7 @@ public fun create(
         downvotes_count: 0,
         expires_at,
         creator: ctx.sender(),
+        status: ProposalStatus::ACTIVE,
         voters_registry: table::new(ctx),
     };
     event::emit(ProposalCreated {
@@ -94,8 +103,8 @@ public fun create(
     return proposal_id
 }
 
-// ########## Public Functions ##########
 public fun vote(self: &mut Proposal, ctx: &mut TxContext, upvote: bool) {
+    assert!(self.status == ProposalStatus::ACTIVE, E_VOTING_ENDED);
     let voter = ctx.sender();
     assert!(!(ctx.sender() == self.creator), E_ADMIN_VOTE);
     assert!(!self.voters_registry.contains(voter), E_DUPLICATE_VOTE);
@@ -111,6 +120,15 @@ public fun vote(self: &mut Proposal, ctx: &mut TxContext, upvote: bool) {
         voter,
         upvote,
     });
+}
+
+public fun change_proposal_status(
+    self: &mut Proposal,
+    _admin_cap: &AdminCapability,
+    status: ProposalStatus,
+) {
+    assert!(status != self.status, E_PROPOSAL_STATUS_NOT_CHANGED);
+    self.status = status;
 }
 
 // ########## Private Functions ##########
@@ -180,4 +198,15 @@ public fun creator(self: &Proposal): address {
 
 public fun has_voted(self: &Proposal, voter: address): bool {
     return self.voters_registry.contains(voter)
+}
+
+public fun status(self: &Proposal): &ProposalStatus {
+    return &self.status
+}
+
+#[test_only]
+public fun enum_active(): ProposalStatus { return ProposalStatus::ACTIVE }
+#[test_only]
+public fun enum_ended(): ProposalStatus {
+    return ProposalStatus::ENDED
 }
