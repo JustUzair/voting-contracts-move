@@ -3,6 +3,7 @@ module voting_contracts::proposal;
 use std::string::String;
 use sui::event;
 use sui::table::{Self, Table};
+use sui::url::{Url, new_unsafe_from_bytes};
 use voting_contracts::dashboard::AdminCapability;
 
 // ########## Constants ##########
@@ -24,7 +25,13 @@ public struct VoteRegistered has copy, drop {
     upvote: bool,
 }
 
-// ########## Structs ##########
+public struct ProofOfVoteNFTMinted has copy, drop {
+    proposal_id: ID,
+    upvote: bool,
+    minted_to: address,
+}
+
+// ########## Storage Structs ##########
 
 public struct Proposal has key {
     id: UID,
@@ -35,6 +42,16 @@ public struct Proposal has key {
     expires_at: u64,
     creator: address,
     voters_registry: Table<address, bool>,
+}
+
+public struct ProofOfVoteNFT has key, store {
+    id: UID,
+    proposal_id: ID,
+    name: String,
+    description: String,
+    upvote: bool,
+    minted_to: address,
+    url: Url,
 }
 
 // ########## Constructor ##########
@@ -78,7 +95,7 @@ public fun create(
 }
 
 // ########## Public Functions ##########
-public fun vote(self: &mut Proposal, ctx: &TxContext, upvote: bool) {
+public fun vote(self: &mut Proposal, ctx: &mut TxContext, upvote: bool) {
     let voter = ctx.sender();
     assert!(!(ctx.sender() == self.creator), E_ADMIN_VOTE);
     assert!(!self.voters_registry.contains(voter), E_DUPLICATE_VOTE);
@@ -88,13 +105,58 @@ public fun vote(self: &mut Proposal, ctx: &TxContext, upvote: bool) {
         self.downvotes_count = self.downvotes_count + 1;
     };
     self.voters_registry.add(voter, true);
+    issue_vote_nft(self, ctx, upvote, voter);
     event::emit(VoteRegistered {
         proposal_id: object::id(self),
         voter,
         upvote,
     });
 }
+
+// ########## Private Functions ##########
+fun issue_vote_nft(self: &Proposal, ctx: &mut TxContext, upvote: bool, recipient: address) {
+    let mut name = b"NFT: ".to_string();
+    name.append(self.title);
+    let mut description = b"Proof Of Vote for NFT: ".to_string();
+    let proposal_address = object::id_address(self).to_string();
+    description.append(proposal_address);
+    let upvote_image = new_unsafe_from_bytes(
+        b"https://fuchsia-eldest-xerinae-808.mypinata.cloud/ipfs/bafybeihvcevz7iaco6gvu4ugp4i4uffkvta7f63xh5w763iekhkuosbwyu",
+    );
+    let downvote_image = new_unsafe_from_bytes(
+        b"https://fuchsia-eldest-xerinae-808.mypinata.cloud/ipfs/bafybeiftxqmitfixvhutfws6tzp6qoc5mwki7x7p5rjsmpargnamis677m",
+    );
+    let povNft = ProofOfVoteNFT {
+        id: object::new(ctx),
+        proposal_id: object::id(self),
+        name,
+        description,
+        url: match (upvote) {
+            true => upvote_image,
+            false => downvote_image,
+        },
+        minted_to: ctx.sender(),
+        upvote,
+    };
+    event::emit(ProofOfVoteNFTMinted {
+        proposal_id: object::id(self),
+        upvote,
+        minted_to: ctx.sender(),
+    });
+    transfer::transfer(povNft, recipient);
+}
+
 // ########## View-only Functions ##########
+public fun getURL(self: &ProofOfVoteNFT): Url {
+    return self.url
+}
+
+public fun getVoteType(self: &ProofOfVoteNFT): String {
+    return match (self.upvote) {
+        true => b"upvote".to_string(),
+        false => b"downvote".to_string(),
+    }
+}
 
 public fun title(self: &Proposal): String {
     return self.title

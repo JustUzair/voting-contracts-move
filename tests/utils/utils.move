@@ -34,7 +34,7 @@ public fun create_proposal(admin_cap: &AdminCapability, ctx: &mut TxContext): ID
 
 public fun create_and_register_proposal(): ID {
     let admin = @0xAd319;
-    let mut proposal_id;
+    let proposal_id;
     // Issue Admin Cap
     let mut scenario = test_scenario::begin(admin);
     {

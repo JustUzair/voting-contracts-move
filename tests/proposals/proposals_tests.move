@@ -5,7 +5,7 @@ module voting_contracts::proposals_tests;
 use std::debug;
 use sui::test_scenario::{Self, take_shared, return_shared};
 use voting_contracts::dashboard::{Self, AdminCapability, DashboardConfig, Dashboard};
-use voting_contracts::proposal::{Self, Proposal, E_ADMIN_VOTE, E_DUPLICATE_VOTE};
+use voting_contracts::proposal::{Self, Proposal, E_ADMIN_VOTE, E_DUPLICATE_VOTE, ProofOfVoteNFT};
 use voting_contracts::utils::{create_proposal, create_and_register_proposal};
 
 #[test]
@@ -182,8 +182,31 @@ public fun test_duplicate_votes_failure() {
         let mut proposal = test_scenario::take_shared<Proposal>(&scenario);
         proposal.vote(scenario.ctx(), true);
         proposal.vote(scenario.ctx(), true);
+        test_scenario::return_shared(proposal);
+    };
+
+    scenario.end();
+}
+
+#[test]
+public fun test_mint_nft_for_valid_votes() {
+    let voter = @0xA01e9;
+    create_and_register_proposal();
+
+    // Get proposal id after proposal creation and registration
+    let mut scenario = test_scenario::begin(voter);
+    {
+        let mut proposal = test_scenario::take_shared<Proposal>(&scenario);
+        proposal.vote(scenario.ctx(), true);
 
         test_scenario::return_shared(proposal);
+    };
+    scenario.next_tx(voter);
+    {
+        let povNft = test_scenario::take_from_sender<ProofOfVoteNFT>(&scenario);
+        debug::print(&povNft);
+        assert!(povNft.getVoteType() == b"upvote".to_string());
+        test_scenario::return_to_sender(&scenario, povNft);
     };
 
     scenario.end();
