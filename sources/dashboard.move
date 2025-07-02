@@ -3,7 +3,6 @@ module voting_contracts::dashboard;
 use std::string::String;
 use sui::event;
 use sui::types;
-use voting_contracts::proposal::Proposal;
 
 // ########## Constants ##########
 const E_DUPLICATE_PROPOSAL: u64 = 0;
