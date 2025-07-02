@@ -2,9 +2,12 @@ module voting_contracts::proposal;
 
 use std::string::String;
 use sui::event;
+use sui::table::{Self, Table};
 use voting_contracts::dashboard::AdminCapability;
 
 // ########## Constants ##########
+const E_DUPLICATE_VOTE: u64 = 3;
+const E_VOTER_EXISTS: u64 = 4;
 
 // ########## Events ##########
 
@@ -14,6 +17,13 @@ public struct ProposalCreated has copy, drop {
     creator: address,
     message: String,
 }
+
+public struct VoteRegistered has copy, drop {
+    proposal_id: ID,
+    voter: address,
+    upvote: bool,
+}
+
 // ########## Structs ##########
 
 public struct Proposal has key {
@@ -24,7 +34,7 @@ public struct Proposal has key {
     downvotes_count: u64,
     expires_at: u64,
     creator: address,
-    voters_registry: vector<address>,
+    voters_registry: Table<address, bool>,
 }
 
 // ########## Constructor ##########
@@ -54,7 +64,7 @@ public fun create(
         downvotes_count: 0,
         expires_at,
         creator: ctx.sender(),
-        voters_registry: vector[],
+        voters_registry: table::new(ctx),
     };
     event::emit(ProposalCreated {
         id: object::id(&proposal),
@@ -67,6 +77,22 @@ public fun create(
     return proposal_id
 }
 
+// ########## Public Functions ##########
+public fun vote(self: &mut Proposal, ctx: &TxContext, upvote: bool) {
+    let voter = ctx.sender();
+    assert!(!self.voters_registry.contains(voter), E_DUPLICATE_VOTE);
+    if (upvote) {
+        self.upvotes_count = self.upvotes_count + 1;
+    } else {
+        self.downvotes_count = self.downvotes_count + 1;
+    };
+    self.voters_registry.add(voter, true);
+    event::emit(VoteRegistered {
+        proposal_id: object::id(self),
+        voter,
+        upvote,
+    });
+}
 // ########## View-only Functions ##########
 
 public fun title(self: &Proposal): String {
@@ -89,6 +115,6 @@ public fun creator(self: &Proposal): address {
     return self.creator
 }
 
-public fun voters(self: &Proposal): vector<address> {
-    return self.voters_registry
+public fun has_voted(self: &Proposal, voter: address): bool {
+    return self.voters_registry.contains(voter)
 }
