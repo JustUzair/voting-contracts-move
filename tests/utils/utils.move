@@ -1,8 +1,8 @@
 module voting_contracts::utils;
 
 use std::debug;
-use sui::object::borrow_id;
-use voting_contracts::dashboard::{AdminCapability, register_proposal};
+use sui::test_scenario;
+use voting_contracts::dashboard::{Self, Dashboard, AdminCapability, register_proposal};
 use voting_contracts::proposal;
 
 // Helper Functions
@@ -29,5 +29,41 @@ public fun create_proposal(admin_cap: &AdminCapability, ctx: &mut TxContext): ID
         ctx,
     );
 
+    return proposal_id
+}
+
+public fun create_and_register_proposal(): ID {
+    let admin = @0xAd319;
+    let mut proposal_id;
+    // Issue Admin Cap
+    let mut scenario = test_scenario::begin(admin);
+    {
+        dashboard::issue_admin_cap(scenario.ctx());
+    };
+
+    // Issue OTW, config, etc and create new proposal
+    scenario.next_tx(admin);
+    {
+        let admin_cap = scenario.take_from_sender<AdminCapability>();
+        let one_time_witness = dashboard::issue_one_time_witness();
+        let dashboard_config = dashboard::issue_admin_config(scenario.ctx());
+        dashboard::new(one_time_witness, &admin_cap, scenario.ctx(), dashboard_config);
+        test_scenario::return_to_sender(&scenario, admin_cap);
+    };
+
+    // Issue OTW, config, etc and create new proposal
+
+    scenario.next_tx(admin);
+    {
+        let admin_cap = scenario.take_from_sender<AdminCapability>();
+        proposal_id = create_proposal(&admin_cap, scenario.ctx());
+        let mut dashboard = test_scenario::take_shared<Dashboard>(&scenario);
+        dashboard.register_proposal(&admin_cap, proposal_id);
+
+        test_scenario::return_shared(dashboard);
+        test_scenario::return_to_sender(&scenario, admin_cap);
+    };
+
+    scenario.end();
     return proposal_id
 }
