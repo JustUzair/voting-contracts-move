@@ -7,8 +7,7 @@ use voting_contracts::dashboard::AdminCapability;
 
 // ########## Constants ##########
 const E_DUPLICATE_VOTE: u64 = 3;
-const E_VOTER_EXISTS: u64 = 4;
-const E_ADMIN_VOTE: u64 = 5;
+const E_ADMIN_VOTE: u64 = 4;
 
 // ########## Events ##########
 

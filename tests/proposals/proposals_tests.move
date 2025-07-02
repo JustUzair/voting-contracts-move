@@ -5,7 +5,7 @@ module voting_contracts::proposals_tests;
 use std::debug;
 use sui::test_scenario::{Self, take_shared, return_shared};
 use voting_contracts::dashboard::{Self, AdminCapability, DashboardConfig, Dashboard};
-use voting_contracts::proposal::{Self, Proposal, E_ADMIN_VOTE};
+use voting_contracts::proposal::{Self, Proposal, E_ADMIN_VOTE, E_DUPLICATE_VOTE};
 use voting_contracts::utils::{create_proposal, create_and_register_proposal};
 
 #[test]
@@ -114,6 +114,7 @@ public fun test_proposal_upvote() {
 
     scenario.end();
 }
+
 #[test]
 public fun test_proposal_downvote() {
     let voter = @0xA01e9;
@@ -163,6 +164,25 @@ public fun test_proposal_admin_cannot_vote() {
         debug::print(&upvotes_count);
         debug::print(&b"----- Down-Votes -----".to_string());
         debug::print(&downvotes_count);
+        test_scenario::return_shared(proposal);
+    };
+
+    scenario.end();
+}
+
+#[test]
+#[expected_failure(abort_code = proposal::E_DUPLICATE_VOTE)]
+public fun test_duplicate_votes_failure() {
+    let voter = @0xA01e9;
+    create_and_register_proposal();
+
+    // Get proposal id after proposal creation and registration
+    let mut scenario = test_scenario::begin(voter);
+    {
+        let mut proposal = test_scenario::take_shared<Proposal>(&scenario);
+        proposal.vote(scenario.ctx(), true);
+        proposal.vote(scenario.ctx(), true);
+
         test_scenario::return_shared(proposal);
     };
 
