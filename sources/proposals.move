@@ -8,6 +8,7 @@ use voting_contracts::dashboard::AdminCapability;
 // ########## Constants ##########
 const E_DUPLICATE_VOTE: u64 = 3;
 const E_VOTER_EXISTS: u64 = 4;
+const E_ADMIN_VOTE: u64 = 5;
 
 // ########## Events ##########
 
@@ -80,6 +81,7 @@ public fun create(
 // ########## Public Functions ##########
 public fun vote(self: &mut Proposal, ctx: &TxContext, upvote: bool) {
     let voter = ctx.sender();
+    assert!(!(ctx.sender() == self.creator), E_ADMIN_VOTE);
     assert!(!self.voters_registry.contains(voter), E_DUPLICATE_VOTE);
     if (upvote) {
         self.upvotes_count = self.upvotes_count + 1;

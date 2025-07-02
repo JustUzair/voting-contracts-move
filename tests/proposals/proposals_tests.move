@@ -5,7 +5,7 @@ module voting_contracts::proposals_tests;
 use std::debug;
 use sui::test_scenario::{Self, take_shared, return_shared};
 use voting_contracts::dashboard::{Self, AdminCapability, DashboardConfig, Dashboard};
-use voting_contracts::proposal::{Self, Proposal};
+use voting_contracts::proposal::{Self, Proposal, E_ADMIN_VOTE};
 use voting_contracts::utils::{create_proposal, create_and_register_proposal};
 
 #[test]
@@ -117,6 +117,35 @@ public fun test_proposal_upvote() {
 #[test]
 public fun test_proposal_downvote() {
     let voter = @0xA01e9;
+    create_and_register_proposal();
+
+    // Get proposal id after proposal creation and registration
+    let mut scenario = test_scenario::begin(voter);
+    {
+        let mut proposal = test_scenario::take_shared<Proposal>(&scenario);
+        assert!(!proposal.has_voted(voter));
+        proposal.vote(scenario.ctx(), false);
+        assert!(proposal.has_voted(voter));
+        debug::print(&b"----- Voter has voted? -----".to_string());
+        debug::print(&proposal.has_voted(voter));
+        let (upvotes_count, downvotes_count) = proposal.votes();
+        assert!(upvotes_count == 0 && downvotes_count == 1);
+        debug::print(&b"----- Up-Votes -----".to_string());
+        debug::print(&upvotes_count);
+        debug::print(&b"----- Down-Votes -----".to_string());
+        debug::print(&downvotes_count);
+        test_scenario::return_shared(proposal);
+    };
+
+    scenario.end();
+}
+
+#[test]
+#[expected_failure(abort_code = proposal::E_ADMIN_VOTE)]
+
+public fun test_proposal_admin_cannot_vote() {
+    let admin = @0xAd319;
+    let voter = admin;
     create_and_register_proposal();
 
     // Get proposal id after proposal creation and registration
