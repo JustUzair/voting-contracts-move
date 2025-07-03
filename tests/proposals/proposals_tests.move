@@ -23,7 +23,7 @@ use voting_contracts::proposal::{
     E_PROPOSAL_EXPIRED,
     ProposalStatus,
     enum_active,
-    enum_ended
+    enum_delisted
 };
 use voting_contracts::utils::{create_proposal, create_and_register_proposal};
 
@@ -41,7 +41,7 @@ public fun test_register_proposal_as_admin() { let mut scenario = test_scenario:
         let dashboard_config = dashboard::issue_admin_config(scenario.ctx());
         dashboard::new(one_time_witness, &admin_cap, scenario.ctx(), dashboard_config);
 
-        test_scenario::return_to_sender(&scenario, admin_cap);
+        scenario.return_to_sender(admin_cap);
     }; scenario.next_tx(ADMIN); {
         let admin_cap = scenario.take_from_sender<AdminCapability>();
         let proposal_id = create_proposal(&admin_cap, scenario.ctx());
@@ -55,7 +55,7 @@ public fun test_register_proposal_as_admin() { let mut scenario = test_scenario:
         assert!(proposals.length() == 1 && proposals.contains(&proposal_id));
 
         test_scenario::return_shared(dashboard);
-        test_scenario::return_to_sender(&scenario, admin_cap);
+        scenario.return_to_sender(admin_cap);
     }; scenario.end(); }
 
 #[test]
@@ -75,7 +75,7 @@ public fun test_register_proposal_as_non_admin() {
         let dashboard_config = dashboard::issue_admin_config(scenario.ctx());
         dashboard::new(one_time_witness, &admin_cap, scenario.ctx(), dashboard_config);
 
-        test_scenario::return_to_sender(&scenario, admin_cap);
+        scenario.return_to_sender(admin_cap);
     };
 
     scenario.next_tx(user);
@@ -92,7 +92,7 @@ public fun test_register_proposal_as_non_admin() {
         assert!(proposals.length() == 1 && proposals.contains(&proposal_id));
 
         test_scenario::return_shared(dashboard);
-        test_scenario::return_to_sender(&scenario, admin_cap);
+        scenario.return_to_sender(admin_cap);
     };
 
     scenario.end();
@@ -226,7 +226,7 @@ public fun test_mint_nft_for_valid_votes() {
         let povNft = test_scenario::take_from_sender<ProofOfVoteNFT>(&scenario);
         debug::print(&povNft);
         assert!(povNft.getVoteType() == b"upvote".to_string());
-        test_scenario::return_to_sender(&scenario, povNft);
+        scenario.return_to_sender(povNft);
     };
 
     scenario.end();
@@ -247,12 +247,12 @@ public fun test_proposal_status_change() {
         debug::print(&b"Proposal Status before toggle".to_string());
         debug::print(proposal.status());
         assert!(proposal.status() == enum_active());
-        proposal.change_proposal_status(&admin_cap, enum_ended());
-        assert!(proposal.status() == enum_ended());
+        proposal.change_proposal_status(&admin_cap, enum_delisted());
+        assert!(proposal.status() == enum_delisted());
         debug::print(&b"Proposal Status after toggle".to_string());
         debug::print(proposal.status());
         test_scenario::return_shared(proposal);
-        test_scenario::return_to_sender(&scenario, admin_cap);
+        scenario.return_to_sender(admin_cap);
     };
     scenario.end();
 }
@@ -269,9 +269,9 @@ public fun test_proposal_vote_not_allowed_after_proposal_end() {
     {
         let admin_cap = scenario.take_from_sender<AdminCapability>();
         let mut proposal = test_scenario::take_shared<Proposal>(&scenario);
-        proposal.change_proposal_status(&admin_cap, enum_ended());
+        proposal.change_proposal_status(&admin_cap, enum_delisted());
         test_scenario::return_shared(proposal);
-        test_scenario::return_to_sender(&scenario, admin_cap);
+        scenario.return_to_sender(admin_cap);
     };
     scenario.next_tx(VOTER);
     {
@@ -307,6 +307,24 @@ public fun test_proposal_vote_expired() {
         assert!(upvotes_count == 1 && downvotes_count == 0);
         test_clock.destroy_for_testing();
         test_scenario::return_shared(proposal);
+    };
+    scenario.end();
+}
+
+#[test]
+public fun test_remove_proposal() {
+    create_and_register_proposal();
+    let mut scenario = test_scenario::begin(ADMIN);
+    {
+        dashboard::issue_admin_cap(scenario.ctx());
+    };
+    scenario.next_tx(ADMIN);
+    {
+        let admin_cap = scenario.take_from_sender<AdminCapability>();
+
+        let proposal = test_scenario::take_shared<Proposal>(&scenario);
+        proposal.remove(&admin_cap);
+        scenario.return_to_sender(admin_cap);
     };
     scenario.end();
 }

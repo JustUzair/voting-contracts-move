@@ -22,7 +22,9 @@ public struct ProposalCreated has copy, drop {
     creator: address,
     message: String,
 }
-
+public struct ProposalRemoved has copy, drop {
+    proposal_id: ID,
+}
 public struct VoteRegistered has copy, drop {
     proposal_id: ID,
     voter: address,
@@ -39,7 +41,6 @@ public struct ProofOfVoteNFTMinted has copy, drop {
 public enum ProposalStatus has copy, drop, store {
     ACTIVE,
     DELISTED,
-    ENDED,
 }
 
 // ########## Storage Structs ##########
@@ -124,6 +125,25 @@ public fun vote(self: &mut Proposal, ctx: &mut TxContext, clock: &Clock, upvote:
         voter,
         upvote,
     });
+}
+
+public fun remove(self: Proposal, _admin_cap: &AdminCapability) {
+    let Proposal {
+        id,
+        title: _,
+        description: _,
+        upvotes_count: _,
+        downvotes_count: _,
+        expires_at: _,
+        creator: _,
+        status: _,
+        voters_registry,
+    } = self;
+    table::drop(voters_registry);
+    event::emit(ProposalRemoved {
+        proposal_id: id.to_inner(),
+    });
+    object::delete(id);
 }
 
 public fun change_proposal_status(
@@ -216,5 +236,3 @@ public fun is_active(self: &Proposal): bool {
 public fun enum_active(): ProposalStatus { return ProposalStatus::ACTIVE }
 #[test_only]
 public fun enum_delisted(): ProposalStatus { return ProposalStatus::DELISTED }
-#[test_only]
-public fun enum_ended(): ProposalStatus { return ProposalStatus::ENDED }
