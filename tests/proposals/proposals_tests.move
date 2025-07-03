@@ -20,6 +20,7 @@ use voting_contracts::proposal::{
     ProofOfVoteNFT,
     E_PROPOSAL_STATUS_NOT_CHANGED,
     E_PROPOSAL_NOT_ACTIVE,
+    E_PROPOSAL_EXPIRED,
     ProposalStatus,
     enum_active,
     enum_ended
@@ -277,6 +278,30 @@ public fun test_proposal_vote_not_allowed_after_proposal_end() {
         let mut proposal = test_scenario::take_shared<Proposal>(&scenario);
         let mut test_clock = clock::create_for_testing(scenario.ctx());
         test_clock.set_for_testing(86400000);
+        proposal.vote(scenario.ctx(), &test_clock, true);
+        let (upvotes_count, downvotes_count) = proposal.votes();
+        assert!(upvotes_count == 1 && downvotes_count == 0);
+        test_clock.destroy_for_testing();
+        test_scenario::return_shared(proposal);
+    };
+    scenario.end();
+}
+
+#[test]
+#[expected_failure(abort_code = E_PROPOSAL_EXPIRED)]
+public fun test_proposal_vote_expired() {
+    create_and_register_proposal();
+    let mut scenario = test_scenario::begin(ADMIN);
+    {
+        dashboard::issue_admin_cap(scenario.ctx());
+    };
+    scenario.next_tx(VOTER);
+    {
+        let one_day_ms: u64 = 86400 * 1000;
+        let seven_days_ms: u64 = 7 * one_day_ms;
+        let mut proposal = test_scenario::take_shared<Proposal>(&scenario);
+        let mut test_clock = clock::create_for_testing(scenario.ctx());
+        test_clock.set_for_testing(seven_days_ms);
         proposal.vote(scenario.ctx(), &test_clock, true);
         let (upvotes_count, downvotes_count) = proposal.votes();
         assert!(upvotes_count == 1 && downvotes_count == 0);
