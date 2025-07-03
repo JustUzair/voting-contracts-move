@@ -1,6 +1,7 @@
 module voting_contracts::proposal;
 
 use std::string::String;
+use sui::clock::Clock;
 use sui::event;
 use sui::table::{Self, Table};
 use sui::url::{Url, new_unsafe_from_bytes};
@@ -10,7 +11,8 @@ use voting_contracts::dashboard::AdminCapability;
 const E_DUPLICATE_VOTE: u64 = 3;
 const E_ADMIN_VOTE: u64 = 4;
 const E_PROPOSAL_STATUS_NOT_CHANGED: u64 = 5;
-const E_VOTING_ENDED: u64 = 6;
+const E_PROPOSAL_NOT_ACTIVE: u64 = 6;
+const E_PROPOSAL_EXPIRED: u64 = 7;
 
 // ########## Events ##########
 
@@ -36,6 +38,7 @@ public struct ProofOfVoteNFTMinted has copy, drop {
 // ########## Enum ##########
 public enum ProposalStatus has copy, drop, store {
     ACTIVE,
+    DELISTED,
     ENDED,
 }
 
@@ -103,10 +106,11 @@ public fun create(
     return proposal_id
 }
 
-public fun vote(self: &mut Proposal, ctx: &mut TxContext, upvote: bool) {
-    assert!(self.status == ProposalStatus::ACTIVE, E_VOTING_ENDED);
+public fun vote(self: &mut Proposal, ctx: &mut TxContext, clock: &Clock, upvote: bool) {
+    assert!(self.expires_at > clock.timestamp_ms(), E_PROPOSAL_EXPIRED);
+    assert!(self.is_active(), E_PROPOSAL_NOT_ACTIVE);
     let voter = ctx.sender();
-    assert!(!(ctx.sender() == self.creator), E_ADMIN_VOTE);
+    assert!(!(voter == self.creator), E_ADMIN_VOTE);
     assert!(!self.voters_registry.contains(voter), E_DUPLICATE_VOTE);
     if (upvote) {
         self.upvotes_count = self.upvotes_count + 1;
@@ -204,9 +208,13 @@ public fun status(self: &Proposal): &ProposalStatus {
     return &self.status
 }
 
+public fun is_active(self: &Proposal): bool {
+    return self.status == ProposalStatus::ACTIVE
+}
+
 #[test_only]
 public fun enum_active(): ProposalStatus { return ProposalStatus::ACTIVE }
 #[test_only]
-public fun enum_ended(): ProposalStatus {
-    return ProposalStatus::ENDED
-}
+public fun enum_delisted(): ProposalStatus { return ProposalStatus::DELISTED }
+#[test_only]
+public fun enum_ended(): ProposalStatus { return ProposalStatus::ENDED }

@@ -216,7 +216,7 @@ sui client call \
 --package 0x3cb8e7d5f4b7b405c385172f11f38a32dcda240c429cef0c666bda4b39512e52 \
 --module dashboard \
 --function create_proposal \
---args "Proposal 1" "Proposal Description 1" 1753172826
+--args "Proposal 1" "Proposal Description 1" 1753172826000
 ```
 
 # Build, preview, and execute programmable transaction blocks.
@@ -228,7 +228,7 @@ sui client ptb \
 --move-call 0x3cb8e7d5f4b7b405c385172f11f38a32dcda240c429cef0c666bda4b39512e52::dashboard::create_proposal \
 '"Proposal 2"' \
 '"Proposal Description 2"' \
-1753172826
+1753172826000
 
 ```
 
@@ -238,9 +238,9 @@ sui client ptb \
 
 ```bash
 sui client ptb \
---move-call 0x3cb8e7d5f4b7b405c385172f11f38a32dcda240c429cef0c666bda4b39512e52::dashboard::create_proposal  '"Proposal 3"' '"Proposal Description 3"' 1753172826 \
---move-call 0x3cb8e7d5f4b7b405c385172f11f38a32dcda240c429cef0c666bda4b39512e52::dashboard::create_proposal  '"Proposal 4"' '"Proposal Description 4"' 1753172826 \
---move-call 0x3cb8e7d5f4b7b405c385172f11f38a32dcda240c429cef0c666bda4b39512e52::dashboard::create_proposal  '"Proposal 5"' '"Proposal Description 5"' 1753172826 \
+--move-call 0x3cb8e7d5f4b7b405c385172f11f38a32dcda240c429cef0c666bda4b39512e52::dashboard::create_proposal  '"Proposal 3"' '"Proposal Description 3"' 1753172826000 \
+--move-call 0x3cb8e7d5f4b7b405c385172f11f38a32dcda240c429cef0c666bda4b39512e52::dashboard::create_proposal  '"Proposal 4"' '"Proposal Description 4"' 1753172826000 \
+--move-call 0x3cb8e7d5f4b7b405c385172f11f38a32dcda240c429cef0c666bda4b39512e52::dashboard::create_proposal  '"Proposal 5"' '"Proposal Description 5"' 1753172826000 \
 --dry-run
 ```
 
@@ -250,7 +250,7 @@ sui client ptb \
 sui client ptb \
 --move-call 0xeb771f096d5c26fc23166c7a224b72c58bc7f38b6924a750cfd43e31faf1094f::proposal::create \
 @0xf3abf566ff83c44d0307bff5379c7b6afc7c729eb0cabe0cf90417bbb386bb01 \
-'"Proposal V2"' '"Proposal Description V2"' 1753172826 \
+'"Proposal V2"' '"Proposal Description V2"' 1753172826000 \
 --assign proposal_id \
 --move-call 0xeb771f096d5c26fc23166c7a224b72c58bc7f38b6924a750cfd43e31faf1094f::dashboard::register_proposal \
 @0xaa9cd58e4c7e00f2a0b033c74958709ff3a101048d831722855c04dd819b0015 \
@@ -266,7 +266,7 @@ https://suiscan.xyz/testnet/tx/ctCu6z8YXetd4KUYGfM56GeXTHPsXxH6WuAsrp4GdMj
 uzair@Mac voting_contracts % sui client ptb \
 --move-call 0xeb771f096d5c26fc23166c7a224b72c58bc7f38b6924a750cfd43e31faf1094f::proposal::create \
 @0xf3abf566ff83c44d0307bff5379c7b6afc7c729eb0cabe0cf90417bbb386bb01 \
-'"Proposal V2"' '"Proposal Description V2"' 1753172826 \
+'"Proposal V2"' '"Proposal Description V2"' 1753172826000 \
 --assign proposal_id \
 --move-call 0xeb771f096d5c26fc23166c7a224b72c58bc7f38b6924a750cfd43e31faf1094f::dashboard::register_proposal \
 @0xaa9cd58e4c7e00f2a0b033c74958709ff3a101048d831722855c04dd819b0015 \
@@ -294,7 +294,7 @@ Transaction Digest: ctCu6z8YXetd4KUYGfM56GeXTHPsXxH6WuAsrp4GdMj
 │ │ 0   Imm/Owned Object ID: 0xf3abf566ff83c44d0307bff5379c7b6afc7c729eb0cabe0cf90417bbb386bb01 │ │
 │ │ 1   Pure Arg: Type: 0x1::string::String, Value: "Proposal V2"                               │ │
 │ │ 2   Pure Arg: Type: 0x1::string::String, Value: "Proposal Description V2"                   │ │
-│ │ 3   Pure Arg: Type: u64, Value: "1753172826"                                                │ │
+│ │ 3   Pure Arg: Type: u64, Value: "1753172826000"                                                │ │
 │ │ 4   Shared Object    ID: 0xaa9cd58e4c7e00f2a0b033c74958709ff3a101048d831722855c04dd819b0015 │ │
 │ ╰─────────────────────────────────────────────────────────────────────────────────────────────╯ │
 │ ╭──────────────────────────────────────────────────────────────────────────────────╮            │

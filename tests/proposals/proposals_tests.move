@@ -3,6 +3,7 @@
 module voting_contracts::proposals_tests;
 
 use std::debug;
+use sui::clock::{Self, Clock};
 use sui::test_scenario::{Self, take_shared, return_shared};
 use voting_contracts::dashboard::{
     Self,
@@ -18,17 +19,16 @@ use voting_contracts::proposal::{
     E_DUPLICATE_VOTE,
     ProofOfVoteNFT,
     E_PROPOSAL_STATUS_NOT_CHANGED,
-    E_VOTING_ENDED,
+    E_PROPOSAL_NOT_ACTIVE,
     ProposalStatus,
     enum_active,
     enum_ended
 };
-use voting_contracts::utils::{create_proposal, create_and_register_proposal};
+use voting_contracts::utils::{create_proposal, create_and_register_proposal, get_clock};
 
 // Constants for test files
 const ADMIN: address = @0xAd319;
 const VOTER: address = @0xA01e9;
-
 #[test]
 public fun test_register_proposal_as_admin() { let mut scenario = test_scenario::begin(ADMIN); {
         dashboard::issue_admin_cap(scenario.ctx());
@@ -104,8 +104,10 @@ public fun test_proposal_upvote() {
     let mut scenario = test_scenario::begin(VOTER);
     {
         let mut proposal = test_scenario::take_shared<Proposal>(&scenario);
+        let mut test_clock = clock::create_for_testing(scenario.ctx());
+        test_clock.set_for_testing(86400000);
         assert!(!proposal.has_voted(VOTER));
-        proposal.vote(scenario.ctx(), true);
+        proposal.vote(scenario.ctx(), &test_clock, true);
         assert!(proposal.has_voted(VOTER));
         debug::print(&b"----- Voter has voted? -----".to_string());
         debug::print(&proposal.has_voted(VOTER));
@@ -115,6 +117,7 @@ public fun test_proposal_upvote() {
         debug::print(&upvotes_count);
         debug::print(&b"----- Down-Votes -----".to_string());
         debug::print(&downvotes_count);
+        test_clock.destroy_for_testing();
         test_scenario::return_shared(proposal);
     };
 
@@ -128,9 +131,11 @@ public fun test_proposal_downvote() {
     // Get proposal id after proposal creation and registration
     let mut scenario = test_scenario::begin(VOTER);
     {
+        let mut test_clock = clock::create_for_testing(scenario.ctx());
+        test_clock.set_for_testing(86400000);
         let mut proposal = test_scenario::take_shared<Proposal>(&scenario);
         assert!(!proposal.has_voted(VOTER));
-        proposal.vote(scenario.ctx(), false);
+        proposal.vote(scenario.ctx(), &test_clock, false);
         assert!(proposal.has_voted(VOTER));
         debug::print(&b"----- Voter has voted? -----".to_string());
         debug::print(&proposal.has_voted(VOTER));
@@ -140,6 +145,7 @@ public fun test_proposal_downvote() {
         debug::print(&upvotes_count);
         debug::print(&b"----- Down-Votes -----".to_string());
         debug::print(&downvotes_count);
+        test_clock.destroy_for_testing();
         test_scenario::return_shared(proposal);
     };
 
@@ -156,8 +162,10 @@ public fun test_proposal_admin_cannot_vote() {
     let mut scenario = test_scenario::begin(ADMIN);
     {
         let mut proposal = test_scenario::take_shared<Proposal>(&scenario);
+        let mut test_clock = clock::create_for_testing(scenario.ctx());
+        test_clock.set_for_testing(86400000);
         assert!(!proposal.has_voted(ADMIN));
-        proposal.vote(scenario.ctx(), false);
+        proposal.vote(scenario.ctx(), &test_clock, true);
         assert!(proposal.has_voted(ADMIN));
         debug::print(&b"----- Voter has voted? -----".to_string());
         debug::print(&proposal.has_voted(ADMIN));
@@ -167,6 +175,7 @@ public fun test_proposal_admin_cannot_vote() {
         debug::print(&upvotes_count);
         debug::print(&b"----- Down-Votes -----".to_string());
         debug::print(&downvotes_count);
+        test_clock.destroy_for_testing();
         test_scenario::return_shared(proposal);
     };
 
@@ -181,9 +190,14 @@ public fun test_duplicate_votes_failure() {
     // Get proposal id after proposal creation and registration
     let mut scenario = test_scenario::begin(VOTER);
     {
+        let mut test_clock = clock::create_for_testing(scenario.ctx());
+        test_clock.set_for_testing(86400000);
         let mut proposal = test_scenario::take_shared<Proposal>(&scenario);
-        proposal.vote(scenario.ctx(), true);
-        proposal.vote(scenario.ctx(), true);
+
+        proposal.vote(scenario.ctx(), &test_clock, true);
+        proposal.vote(scenario.ctx(), &test_clock, true);
+
+        test_clock.destroy_for_testing();
         test_scenario::return_shared(proposal);
     };
 
@@ -198,7 +212,10 @@ public fun test_mint_nft_for_valid_votes() {
     let mut scenario = test_scenario::begin(VOTER);
     {
         let mut proposal = test_scenario::take_shared<Proposal>(&scenario);
-        proposal.vote(scenario.ctx(), true);
+        let mut test_clock = clock::create_for_testing(scenario.ctx());
+        test_clock.set_for_testing(86400000);
+        proposal.vote(scenario.ctx(), &test_clock, true);
+        test_clock.destroy_for_testing();
 
         test_scenario::return_shared(proposal);
     };
@@ -239,7 +256,7 @@ public fun test_proposal_status_change() {
 }
 
 #[test]
-#[expected_failure(abort_code = E_VOTING_ENDED)]
+#[expected_failure(abort_code = E_PROPOSAL_NOT_ACTIVE)]
 public fun test_proposal_vote_not_allowed_after_proposal_end() {
     create_and_register_proposal();
     let mut scenario = test_scenario::begin(ADMIN);
@@ -257,9 +274,12 @@ public fun test_proposal_vote_not_allowed_after_proposal_end() {
     scenario.next_tx(VOTER);
     {
         let mut proposal = test_scenario::take_shared<Proposal>(&scenario);
-        proposal.vote(scenario.ctx(), true);
+        let mut test_clock = clock::create_for_testing(scenario.ctx());
+        test_clock.set_for_testing(86400000);
+        proposal.vote(scenario.ctx(), &test_clock, true);
         let (upvotes_count, downvotes_count) = proposal.votes();
         assert!(upvotes_count == 1 && downvotes_count == 0);
+        test_clock.destroy_for_testing();
         test_scenario::return_shared(proposal);
     };
     scenario.end();
