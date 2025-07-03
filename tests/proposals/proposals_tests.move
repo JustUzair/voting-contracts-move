@@ -24,11 +24,12 @@ use voting_contracts::proposal::{
     enum_active,
     enum_ended
 };
-use voting_contracts::utils::{create_proposal, create_and_register_proposal, get_clock};
+use voting_contracts::utils::{create_proposal, create_and_register_proposal};
 
 // Constants for test files
 const ADMIN: address = @0xAd319;
 const VOTER: address = @0xA01e9;
+
 #[test]
 public fun test_register_proposal_as_admin() { let mut scenario = test_scenario::begin(ADMIN); {
         dashboard::issue_admin_cap(scenario.ctx());
